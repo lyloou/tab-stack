@@ -121,6 +121,9 @@ function buildDomainRow(domain, tabs, savedCount, maxCount, query) {
   const list = group.querySelector('.tab-list');
   const chevron = group.querySelector('.chevron');
 
+  const tabHit = query && tabs.some(t => t.title.toLowerCase().includes(query));
+  if (tabHit) { list.classList.add('open'); chevron.classList.add('open'); }
+
   row.addEventListener('click', e => {
     if (e.target.closest('.row-btn')) return;
     const open = list.classList.toggle('open');
@@ -178,6 +181,9 @@ function buildSavedRow(domain, tabs, query) {
   const row = group.querySelector('.domain-row');
   const list = group.querySelector('.tab-list');
   const chevron = group.querySelector('.chevron');
+
+  const tabHit = query && tabs.some(t => t.title.toLowerCase().includes(query));
+  if (tabHit) { list.classList.add('open'); chevron.classList.add('open'); }
 
   row.addEventListener('click', e => {
     if (e.target.closest('.row-btn')) return;
@@ -451,5 +457,22 @@ document.getElementById('search').addEventListener('input', e => {
   renderAll(e.target.value.trim().toLowerCase());
 });
 
+// ── Settings ──────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  const settings = await send('getSettings');
+  document.getElementById('auto-stack-toggle').checked = settings?.autoStack ?? true;
+  document.getElementById('max-stack-input').value = settings?.maxStack ?? 500;
+}
+
+document.getElementById('auto-stack-toggle').addEventListener('change', async e => {
+  await send('setSetting', { key: 'autoStack', value: e.target.checked });
+});
+
+document.getElementById('max-stack-input').addEventListener('change', async e => {
+  const val = Math.max(10, Math.min(9999, parseInt(e.target.value) || 500));
+  e.target.value = val;
+  await send('setSetting', { key: 'maxStack', value: val });
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
-init().then(() => document.getElementById('search').focus());
+Promise.all([init(), loadSettings()]).then(() => document.getElementById('search').focus());

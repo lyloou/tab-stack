@@ -3,6 +3,9 @@
 // Cmd+Shift+D  : Open popup → view all stacks, click to restore
 
 const STORAGE_KEY = 'tabStacks'; // { "github.com": [{id, title, url, windowId}, ...], ... }
+const SETTINGS_KEY = 'settings';  // { autoStack: bool, maxStack: number }
+const DEFAULT_SETTINGS = { autoStack: true, maxStack: 500 };
+const SKIP_PROTOCOLS = ['chrome:', 'chrome-extension:', 'about:', 'edge:', 'brave:'];
 
 // ── Group all open tabs by domain ────────────────────────────────────────────
 async function getAllDomains() {
@@ -43,11 +46,13 @@ async function pushCurrentDomain() {
     for (const t of toClose) {
       if (!existing.has(t.url)) stacks[domain].push({ id: t.id, title: t.title, url: t.url, windowId: t.windowId });
     }
+    await enforceLimit(stacks);
     await chrome.storage.local.set({ [STORAGE_KEY]: stacks, lastUpdate: Date.now() });
     chrome.tabs.remove(toClose.map(t => t.id));
   } else {
     // Only one tab left: push it too and close it
     if (!existing.has(active.url)) stacks[domain].push({ id: active.id, title: active.title, url: active.url, windowId: active.windowId });
+    await enforceLimit(stacks);
     await chrome.storage.local.set({ [STORAGE_KEY]: stacks, lastUpdate: Date.now() });
     chrome.tabs.remove(active.id);
   }
@@ -95,6 +100,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg.msg === 'pushTabsToStack') {
     pushTabsToStack(msg.domain, msg.tabs).then(sendResponse);
+    return true;
+  }
+  if (msg.msg === 'getSettings') {
+    chrome.storage.local.get(SETTINGS_KEY).then(r => sendResponse(Object.assign({}, DEFAULT_SETTINGS, r[SETTINGS_KEY] || {})));
+    return true;
+  }
+  if (msg.msg === 'setSetting') {
+    chrome.storage.local.get(SETTINGS_KEY).then(r => {
+      const s = r[SETTINGS_KEY] || { autoStack: true };
+      s[msg.key] = msg.value;
+      chrome.storage.local.set({ [SETTINGS_KEY]: s }).then(() => sendResponse({ ok: true }));
+    });
     return true;
   }
   if (msg.msg === 'pushAll') {
@@ -237,8 +254,76 @@ async function renameStack(domain, newName) {
   await chrome.storage.local.set({ [STORAGE_KEY]: stacks });
 }
 
+// ── Enforce max stack size (FIFO across all domains) ─────────────────────────
+async function enforceLimit(stacks) {
+  const r = await chrome.storage.local.get(SETTINGS_KEY);
+  const limit = (Object.assign({}, DEFAULT_SETTINGS, r[SETTINGS_KEY] || {})).maxStack;
+  const total = Object.values(stacks).flat().length;
+  if (total <= limit) return stacks;
+
+  let overflow = total - limit;
+  // Remove oldest entries first (from domains with most entries)
+  const domains = Object.keys(stacks).sort((a, b) => stacks[b].length - stacks[a].length);
+  for (const domain of domains) {
+    if (overflow <= 0) break;
+    const remove = Math.min(overflow, stacks[domain].length);
+    stacks[domain].splice(0, remove);
+    overflow -= remove;
+    if (stacks[domain].length === 0) delete stacks[domain];
+  }
+  return stacks;
+}
+
+// ── Auto-stack on normal tab close ───────────────────────────────────────────
+chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  const result = await chrome.storage.local.get(SETTINGS_KEY);
+  const settings = result[SETTINGS_KEY] || { autoStack: true };
+  if (!settings.autoStack) return;
+
+  // We only have the tabId at this point — tab info is gone.
+  // We stash closing tab info in a short-lived map before removal.
+  const cached = _tabCache.get(tabId);
+  _tabCache.delete(tabId);
+  if (!cached) return;
+
+  let domain;
+  try {
+    const u = new URL(cached.url);
+    if (SKIP_PROTOCOLS.includes(u.protocol)) return;
+    domain = u.hostname;
+    if (!domain) return;
+  } catch (_) { return; }
+
+  const r2 = await chrome.storage.local.get(STORAGE_KEY);
+  const stacks = r2[STORAGE_KEY] || {};
+  if (!stacks[domain]) stacks[domain] = [];
+  const existing = new Set(stacks[domain].map(t => t.url));
+  if (existing.has(cached.url)) return; // already stacked by push functions
+
+  stacks[domain].push({ id: tabId, title: cached.title, url: cached.url, windowId: cached.windowId });
+  await enforceLimit(stacks);
+  await chrome.storage.local.set({ [STORAGE_KEY]: stacks });
+
+  const count = Object.values(stacks).flat().length;
+  chrome.action.setBadgeText({ text: count > 0 ? String(count) : '' });
+});
+
+// Cache tab info before it's removed (onUpdated keeps it fresh)
+const _tabCache = new Map();
+
+chrome.tabs.onUpdated.addListener((tabId, _change, tab) => {
+  if (tab.url) _tabCache.set(tabId, { url: tab.url, title: tab.title || '', windowId: tab.windowId });
+});
+
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.url) _tabCache.set(tabId, { url: tab.url, title: tab.title || '', windowId: tab.windowId });
+  } catch (_) {}
+});
+
 // ── Init badge on install ─────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.action.setBadgeBackgroundColor({ color: '#6366f1' });
+  chrome.action.setBadgeBackgroundColor({ color: '#b45309' });
   chrome.action.setBadgeText({ text: '' });
 });

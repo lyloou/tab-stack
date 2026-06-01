@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { background: #ede9e3; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 32px; font-family: monospace; color: #b45309; }
+  .previews { display: flex; align-items: flex-end; gap: 32px; }
+  .preview { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; color: #7878a0; }
+  canvas { border-radius: 4px; image-rendering: pixelated; }
+  button { background: #e8a020; color: #07070d; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-family: monospace; font-weight: bold; font-size: 13px; }
+  button:hover { background: #c88a18; }
+  h2 { margin: 0; font-size: 14px; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<h2>TAB STACK — ICON EXPORT</h2>
+<div class="previews">
+  <div class="preview"><canvas id="c128" width="128" height="128"></canvas><span>128×128</span></div>
+  <div class="preview"><canvas id="c48" width="48" height="48"></canvas><span>48×48</span></div>
+  <div class="preview"><canvas id="c32" width="32" height="32"></canvas><span>32×32</span></div>
+  <div class="preview"><canvas id="c16" width="16" height="16"></canvas><span>16×16</span></div>
+</div>
+<button onclick="exportAll()">⬇ Export All PNGs</button>
+
+<script>
+const svgText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="bg" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ede9e3"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#b45309" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#bg)"/>
+  <rect width="128" height="128" rx="26" fill="none" stroke="#d0ccc4" stroke-width="1"/>
+  <rect x="28" y="82" width="56" height="12" rx="4" fill="#e6e3de"/>
+  <rect x="28" y="82" width="56" height="12" rx="4" fill="none" stroke="#d0ccc4" stroke-width="1"/>
+  <rect x="20" y="64" width="72" height="13" rx="4" fill="#dedad4"/>
+  <rect x="20" y="64" width="72" height="13" rx="4" fill="none" stroke="#b45309" stroke-width="0.8" opacity="0.35"/>
+  <rect x="12" y="44" width="88" height="14" rx="5" fill="#b45309" filter="url(#shadow)"/>
+  <rect x="12" y="38" width="26" height="9" rx="3" fill="#92400e"/>
+  <circle cx="96" cy="96" r="14" fill="#f5f4ef"/>
+  <circle cx="96" cy="96" r="14" fill="none" stroke="#b45309" stroke-width="1.5"/>
+  <path d="M91 92 L96 98 L101 92" stroke="#b45309" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <line x1="96" y1="89" x2="96" y2="98" stroke="#b45309" stroke-width="2.2" stroke-linecap="round"/>
+</svg>`;
+
+const blob = new Blob([svgText], { type: 'image/svg+xml' });
+const url = URL.createObjectURL(blob);
+const img = new Image();
+
+img.onload = () => {
+  [[128,'c128'],[48,'c48'],[32,'c32'],[16,'c16']].forEach(([size, id]) => {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,size,size);
+    ctx.drawImage(img, 0, 0, size, size);
+  });
+};
+img.src = url;
+
+function exportAll() {
+  [[128,'icon128'],[48,'icon48'],[32,'icon32'],[16,'icon16']].forEach(([size, name]) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    const a = document.createElement('a');
+    a.download = name + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+}
+</script>
+</body>
+</html>

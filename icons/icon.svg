@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Amber background -->
+  <rect width="128" height="128" rx="26" fill="#b45309"/>
+
+  <!-- Three decreasing white bars (matching popup logo mark proportions) -->
+  <!-- Top bar — full width -->
+  <rect x="18" y="34" width="92" height="20" rx="7" fill="#ffffff"/>
+  <!-- Middle bar — ~75% width -->
+  <rect x="18" y="64" width="66" height="20" rx="7" fill="#ffffff" opacity="0.9"/>
+  <!-- Bottom bar — ~50% width -->
+  <rect x="18" y="94" width="42" height="20" rx="7" fill="#ffffff" opacity="0.75"/>
+</svg>
