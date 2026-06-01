@@ -1,0 +1,48 @@
+manifest.json
+  s_c418a7794b7f11::t_2228174c0a43ce 7-12,15-21
+popup.html
+  s_c418a7794b7f11::t_45064b531d4a6e 417-461
+  s_c418a7794b7f11::t_2e2f2517d05e2e 628,630-636,644-646
+  s_c418a7794b7f11::t_84f24de19acdd4 10-22
+  s_c418a7794b7f11::t_a848ddd144bedb 629,637-643
+  s_c418a7794b7f11::t_c2f325235ef4d1 76
+popup.js
+  s_c418a7794b7f11::t_f4525695953528 185-187
+  s_c418a7794b7f11::t_7264770b46cb50 464,469-474
+  s_c418a7794b7f11::t_9a309224331f8a 124-126
+  s_c418a7794b7f11::t_f07a55c5230aa3 460-463,465-468,475-476,478
+background.js
+  s_c418a7794b7f11::t_e02b94bd534923 304
+  s_c418a7794b7f11::t_ce43ae80a2ada9 49,55
+  s_c418a7794b7f11::t_1cec106fcbdf1b 105,107-116
+  s_c418a7794b7f11::t_3960fc656a231c 277-303,305-324,327
+  s_c418a7794b7f11::t_01e067d8f4fb32 257-276
+  s_c418a7794b7f11::t_9e47be45624b3b 106
+  s_c418a7794b7f11::t_f5e21bbced9f0e 8
+  s_c418a7794b7f11::t_65092bff5159e0 6-7
+README.md
+  s_c418a7794b7f11::t_f013533c7fe9d7 11-12,16-17,33-41,59-63
+icons/icon.svg
+  s_c418a7794b7f11::t_f643579d7be60e 2-11
+  s_c418a7794b7f11::t_14670b833b74fc 1,12
+icons/export.html
+  s_c418a7794b7f11::t_c8e8db8277be2e 6
+  s_c418a7794b7f11::t_23aa6fa161b3c4 28-30,32-33,36-47
+  s_c418a7794b7f11::t_386f3658ec6c43 1-5,7-27,31,34-35,48-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9cb11518c535e557e194f6ff399f1bd3a2c2376f",
+  "prompts": {},
+  "sessions": {
+    "s_c418a7794b7f11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "26af14e3-d4cc-4349-8bb4-fb7ff8afcfef",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "lilou <lyloou@qq.com>"
+    }
+  }
+}
