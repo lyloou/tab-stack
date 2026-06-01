@@ -1,0 +1,25 @@
+popup.js
+  s_c418a7794b7f11::t_8e4679d0e32d5c 11-18
+popup.html
+  s_c418a7794b7f11::t_7fff223e1a84cf 5-10
+background.js
+  s_c418a7794b7f11::t_f9a793a5b3b135 325-328
+manifest.json
+  s_c418a7794b7f11::t_08fad58e31fd00 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d726a6c91688937827c83072bd94402fe4b96720",
+  "prompts": {},
+  "sessions": {
+    "s_c418a7794b7f11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "26af14e3-d4cc-4349-8bb4-fb7ff8afcfef",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "lilou <lyloou@qq.com>"
+    }
+  }
+}
