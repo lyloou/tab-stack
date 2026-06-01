@@ -1,0 +1,34 @@
+popup.html
+  s_c418a7794b7f11::t_21b9f28b0e20a2 571,573
+  s_c418a7794b7f11::t_159367141df211 572
+.gitignore
+  s_c418a7794b7f11::t_2217117a74e6a9 1
+popup.js
+  s_c418a7794b7f11::t_041e734101d951 214-226
+manifest.json
+  s_c418a7794b7f11::t_ee6433caa4569d 17-18,31-32
+  s_c418a7794b7f11::t_67ed98ff039cea 22-23,26-28
+  s_c418a7794b7f11::t_956169d4ef689b 24-25
+README.md
+  s_c418a7794b7f11::t_f8f66da06f6eb2 25-27
+  s_c418a7794b7f11::t_59f59ae4b24554 10-13
+background.js
+  s_c418a7794b7f11::t_a9dfdc98eaaa28 62-63
+  s_c418a7794b7f11::t_77299ce3311809 28-32,40-46,48-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c3d8843b5990ae4a40a5dda556b13ce185d1f7f6",
+  "prompts": {},
+  "sessions": {
+    "s_c418a7794b7f11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "26af14e3-d4cc-4349-8bb4-fb7ff8afcfef",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "lilou <lyloou@qq.com>"
+    }
+  }
+}
