@@ -3,7 +3,7 @@
   "name": "Tab Stack",
   "version": "1.0",
   "description": "Group and navigate tabs by domain or custom stacks",
-  "permissions": ["tabs", "storage", "activeTab"],
+  "permissions": ["tabs", "storage", "activeTab", "alarms"],
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

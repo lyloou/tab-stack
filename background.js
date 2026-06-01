@@ -322,6 +322,10 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   } catch (_) {}
 });
 
+// ── SW Keepalive (prevent cold-start delay) ───────────────────────────────────
+chrome.alarms.create('keepalive', { periodInMinutes: 0.4 }); // every ~24s
+chrome.alarms.onAlarm.addListener(() => {}); // listener keeps SW alive
+
 // ── Init badge on install ─────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
   chrome.action.setBadgeBackgroundColor({ color: '#b45309' });

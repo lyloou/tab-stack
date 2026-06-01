@@ -8,8 +8,14 @@ let _renameDomain = null;
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 async function init() {
-  [_domains, _stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
-  renderAll();
+  // Phase 1: render Saved stacks immediately (storage, fast)
+  _stacks = await send('getStacks');
+  renderStacks('');
+  updateStat();
+
+  // Phase 2: render Open domains (tab query, slower)
+  _domains = await send('getDomains');
+  renderDomains('');
   updateStat();
 }
 
