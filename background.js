@@ -25,31 +25,33 @@ async function pushCurrentDomain() {
     chrome.tabs.query({}),
   ]);
   if (!activeTab[0]) return;
-  const domain = new URL(activeTab[0].url).hostname;
-  const keep = activeTab[0]; // keep the active tab open
-  const toClose = allTabs.filter(t => {
-    try { return new URL(t.url).hostname === domain && t.id !== keep.id; } catch (_) { return false; }
+  const active = activeTab[0];
+  const domain = new URL(active.url).hostname;
+
+  const domainTabs = allTabs.filter(t => {
+    try { return new URL(t.url).hostname === domain; } catch (_) { return false; }
   });
 
-  // Load existing stacks
   const result = await chrome.storage.local.get(STORAGE_KEY);
   const stacks = result[STORAGE_KEY] || {};
-
-  // Append to stack (don't lose existing)
   if (!stacks[domain]) stacks[domain] = [];
   const existing = new Set(stacks[domain].map(t => t.url));
-  for (const t of toClose) {
-    if (!existing.has(t.url)) stacks[domain].push({ id: t.id, title: t.title, url: t.url, windowId: t.windowId });
-  }
 
-  await chrome.storage.local.set({ [STORAGE_KEY]: stacks, lastUpdate: Date.now() });
-
-  // Close the duplicate tabs
-  if (toClose.length > 0) {
+  if (domainTabs.length > 1) {
+    // Multiple tabs: push all except active, keep active open
+    const toClose = domainTabs.filter(t => t.id !== active.id);
+    for (const t of toClose) {
+      if (!existing.has(t.url)) stacks[domain].push({ id: t.id, title: t.title, url: t.url, windowId: t.windowId });
+    }
+    await chrome.storage.local.set({ [STORAGE_KEY]: stacks, lastUpdate: Date.now() });
     chrome.tabs.remove(toClose.map(t => t.id));
+  } else {
+    // Only one tab left: push it too and close it
+    if (!existing.has(active.url)) stacks[domain].push({ id: active.id, title: active.title, url: active.url, windowId: active.windowId });
+    await chrome.storage.local.set({ [STORAGE_KEY]: stacks, lastUpdate: Date.now() });
+    chrome.tabs.remove(active.id);
   }
 
-  // Badge shows stack count
   const count = Object.values(stacks).flat().length;
   chrome.action.setBadgeText({ text: count > 0 ? String(count) : '' });
   chrome.action.setBadgeBackgroundColor({ color: '#6366f1' });
@@ -57,9 +59,8 @@ async function pushCurrentDomain() {
 
 // ── Handle keyboard command ───────────────────────────────────────────────────
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'push-domain') {
-    pushCurrentDomain();
-  }
+  if (command === 'push-domain') pushCurrentDomain();
+  if (command === 'push-all') pushAll();
 });
 
 // ── Refresh groups for popup display ─────────────────────────────────────────

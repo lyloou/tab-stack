@@ -211,6 +211,19 @@ function buildSavedRow(domain, tabs, query) {
     openRenameModal(domain);
   });
 
+  // Click saved tab item → open in foreground and pop from stack
+  group.querySelectorAll('.tab-item').forEach(item => {
+    item.addEventListener('click', async e => {
+      if (e.target.closest('.tab-del')) return;
+      const index = parseInt(item.dataset.index);
+      const url = tabs[index]?.url;
+      if (!url) return;
+      await send('removeStackTab', { domain, index });
+      await chrome.tabs.create({ url, active: true });
+      window.close();
+    });
+  });
+
   // Delete single tab
   group.querySelectorAll('.tab-del').forEach(btn => {
     btn.addEventListener('click', async e => {

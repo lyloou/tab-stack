@@ -14,15 +14,22 @@
   "commands": {
     "push-domain": {
       "suggested_key": {
-        "mac": "Alt+Shift+S",
-        "windows": "Alt+Shift+S"
+        "mac": "Alt+Shift+W",
+        "windows": "Alt+Shift+W"
       },
       "description": "Push current domain tab stack"
     },
+    "push-all": {
+      "suggested_key": {
+        "mac": "Alt+Shift+A",
+        "windows": "Alt+Shift+A"
+      },
+      "description": "Stack all tabs except current"
+    },
     "_execute_action": {
       "suggested_key": {
-        "mac": "Alt+Shift+D",
-        "windows": "Alt+Shift+D"
+        "mac": "Alt+Shift+T",
+        "windows": "Alt+Shift+T"
       }
     }
   }
