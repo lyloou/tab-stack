@@ -5,18 +5,28 @@ let _stacks = {};
 let _lastRestored = null;
 let _toastTimer = null;
 let _renameDomain = null;
+const _perfStart = performance.now();
+
+function perf(label) {
+  console.debug(`[TabStack] ${label}: ${Math.round(performance.now() - _perfStart)}ms`);
+}
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 async function init() {
+  const query = currentQuery();
+
   // Phase 1: render Saved stacks immediately (storage, fast)
-  _stacks = await send('getStacks');
-  renderStacks('');
+  _stacks = await send('getStacks') || {};
+  perf('stacks loaded');
+  renderStacks(query);
   updateStat();
 
   // Phase 2: render Open domains (tab query, slower)
-  _domains = await send('getDomains');
-  renderDomains('');
+  _domains = await send('getDomains') || {};
+  perf('domains loaded');
+  renderDomains(query);
   updateStat();
+  perf('rendered');
 }
 
 function send(msg, data) {
@@ -114,24 +124,42 @@ function buildDomainRow(domain, tabs, savedCount, maxCount, query) {
         <button class="row-btn stack-row-btn" data-domain="${domain}" title="Stack this domain">⬇</button>
       </div>
     </div>
-    <div class="tab-list" id="dom-${esc(domain)}">
-      ${tabs.map(t => `
-        <div class="tab-item" data-tab-id="${t.id}">
-          <span class="tab-title">${hl(t.title.substring(0, 60), query)}</span>
-        </div>
-      `).join('')}
-    </div>
+    <div class="tab-list" id="dom-${esc(domain)}"></div>
   `;
 
   const row = group.querySelector('.domain-row');
   const list = group.querySelector('.tab-list');
   const chevron = group.querySelector('.chevron');
 
+  function renderList() {
+    if (list.dataset.rendered) return;
+    list.innerHTML = tabs.map(t => `
+      <div class="tab-item" data-tab-id="${t.id}">
+        <span class="tab-title">${hl(t.title.substring(0, 60), query)}</span>
+      </div>
+    `).join('');
+    list.dataset.rendered = 'true';
+    group.querySelectorAll('.tab-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const id = parseInt(item.dataset.tabId);
+        if (id) await chrome.tabs.update(id, { active: true });
+        window.close();
+      });
+    });
+  }
+
+  list.addEventListener('ensure-rendered', renderList);
+
   const tabHit = query && tabs.some(t => t.title.toLowerCase().includes(query));
-  if (tabHit) { list.classList.add('open'); chevron.classList.add('open'); }
+  if (tabHit) {
+    renderList();
+    list.classList.add('open');
+    chevron.classList.add('open');
+  }
 
   row.addEventListener('click', e => {
     if (e.target.closest('.row-btn')) return;
+    renderList();
     const open = list.classList.toggle('open');
     chevron.classList.toggle('open', open);
   });
@@ -141,17 +169,11 @@ function buildDomainRow(domain, tabs, savedCount, maxCount, query) {
     const btn = e.currentTarget;
     btn.textContent = '…';
     await send('pushDomain', { domain });
-    [_domains, _stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+    const [domains, stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+    _domains = domains || {};
+    _stacks = stacks || {};
     renderAll(currentQuery());
     updateStat();
-  });
-
-  group.querySelectorAll('.tab-item').forEach(item => {
-    item.addEventListener('click', async () => {
-      const id = parseInt(item.dataset.tabId);
-      if (id) await chrome.tabs.update(id, { active: true });
-      window.close();
-    });
   });
 
   return group;
@@ -174,25 +196,60 @@ function buildSavedRow(domain, tabs, query) {
         <button class="row-btn del-btn" data-domain="${domain}" title="Delete group">✕</button>
       </div>
     </div>
-    <div class="tab-list" id="saved-${esc(domain)}">
-      ${tabs.map((t, i) => `
-        <div class="tab-item" data-index="${i}">
-          <span class="tab-title">${hl(t.title.substring(0, 60), query)}</span>
-          <button class="tab-del" data-domain="${domain}" data-index="${i}" title="Remove">×</button>
-        </div>
-      `).join('')}
-    </div>
+    <div class="tab-list" id="saved-${esc(domain)}"></div>
   `;
 
   const row = group.querySelector('.domain-row');
   const list = group.querySelector('.tab-list');
   const chevron = group.querySelector('.chevron');
 
+  function renderList() {
+    if (list.dataset.rendered) return;
+    list.innerHTML = tabs.map((t, i) => `
+      <div class="tab-item" data-index="${i}">
+        <span class="tab-title">${hl(t.title.substring(0, 60), query)}</span>
+        <button class="tab-del" data-domain="${domain}" data-index="${i}" title="Remove">×</button>
+      </div>
+    `).join('');
+    list.dataset.rendered = 'true';
+
+    // Click saved tab item → open in foreground and pop from stack
+    group.querySelectorAll('.tab-item').forEach(item => {
+      item.addEventListener('click', async e => {
+        if (e.target.closest('.tab-del')) return;
+        const index = parseInt(item.dataset.index);
+        const url = tabs[index]?.url;
+        if (!url) return;
+        await send('removeStackTab', { domain, index });
+        await chrome.tabs.create({ url, active: true });
+        window.close();
+      });
+    });
+
+    // Delete single tab
+    group.querySelectorAll('.tab-del').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        await send('removeStackTab', { domain: btn.dataset.domain, index: parseInt(btn.dataset.index) });
+        _stacks = await send('getStacks') || {};
+        renderAll(currentQuery());
+        updateStat();
+      });
+    });
+  }
+
+  list.addEventListener('ensure-rendered', renderList);
+
   const tabHit = query && tabs.some(t => t.title.toLowerCase().includes(query));
-  if (tabHit) { list.classList.add('open'); chevron.classList.add('open'); }
+  if (tabHit) {
+    renderList();
+    list.classList.add('open');
+    chevron.classList.add('open');
+  }
 
   row.addEventListener('click', e => {
     if (e.target.closest('.row-btn')) return;
+    renderList();
     const open = list.classList.toggle('open');
     chevron.classList.toggle('open', open);
   });
@@ -202,7 +259,9 @@ function buildSavedRow(domain, tabs, query) {
     e.stopPropagation();
     _lastRestored = { domain, tabs: [...tabs] };
     await send('restoreStack', { domain });
-    [_domains, _stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+    const [domains, stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+    _domains = domains || {};
+    _stacks = stacks || {};
     renderAll(currentQuery());
     updateStat();
     showToast(`Restored ${tabs.length} tab${tabs.length > 1 ? 's' : ''} from ${domain}`);
@@ -212,7 +271,7 @@ function buildSavedRow(domain, tabs, query) {
   group.querySelector('.del-btn').addEventListener('click', async e => {
     e.stopPropagation();
     await send('deleteStack', { domain });
-    _stacks = await send('getStacks');
+    _stacks = await send('getStacks') || {};
     renderAll(currentQuery());
     updateStat();
   });
@@ -221,30 +280,6 @@ function buildSavedRow(domain, tabs, query) {
   group.querySelector('.rename-btn').addEventListener('click', e => {
     e.stopPropagation();
     openRenameModal(domain);
-  });
-
-  // Click saved tab item → open in foreground and pop from stack
-  group.querySelectorAll('.tab-item').forEach(item => {
-    item.addEventListener('click', async e => {
-      if (e.target.closest('.tab-del')) return;
-      const index = parseInt(item.dataset.index);
-      const url = tabs[index]?.url;
-      if (!url) return;
-      await send('removeStackTab', { domain, index });
-      await chrome.tabs.create({ url, active: true });
-      window.close();
-    });
-  });
-
-  // Delete single tab
-  group.querySelectorAll('.tab-del').forEach(btn => {
-    btn.addEventListener('click', async e => {
-      e.stopPropagation();
-      await send('removeStackTab', { domain: btn.dataset.domain, index: parseInt(btn.dataset.index) });
-      _stacks = await send('getStacks');
-      renderAll(currentQuery());
-      updateStat();
-    });
   });
 
   return group;
@@ -271,7 +306,7 @@ document.getElementById('rename-confirm').addEventListener('click', async () => 
   const newName = document.getElementById('rename-input').value.trim();
   if (_renameDomain && newName) {
     await send('renameStack', { domain: _renameDomain, newName });
-    _stacks = await send('getStacks');
+    _stacks = await send('getStacks') || {};
     renderAll(currentQuery());
     updateStat();
   }
@@ -331,7 +366,7 @@ document.getElementById('toast-undo').addEventListener('click', async () => {
   _lastRestored = null;
   document.getElementById('toast').classList.remove('show');
   await send('pushTabsToStack', { domain, tabs });
-  _stacks = await send('getStacks');
+  _stacks = await send('getStacks') || {};
   renderAll(currentQuery());
   updateStat();
 });
@@ -341,7 +376,9 @@ document.getElementById('stack-btn').addEventListener('click', async () => {
   const btn = document.getElementById('stack-btn');
   btn.textContent = '…';
   await send('pushCurrent');
-  [_domains, _stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+  const [domains, stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+  _domains = domains || {};
+  _stacks = stacks || {};
   renderAll(currentQuery());
   updateStat();
   btn.textContent = '⬇ Stack';
@@ -351,7 +388,9 @@ document.getElementById('stack-all-btn').addEventListener('click', async () => {
   const btn = document.getElementById('stack-all-btn');
   btn.textContent = '…';
   await send('pushAll');
-  [_domains, _stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+  const [domains, stacks] = await Promise.all([send('getDomains'), send('getStacks')]);
+  _domains = domains || {};
+  _stacks = stacks || {};
   renderAll(currentQuery());
   updateStat();
   btn.textContent = '⬇ All';
@@ -360,7 +399,10 @@ document.getElementById('stack-all-btn').addEventListener('click', async () => {
 document.getElementById('refresh-btn').addEventListener('click', () => init());
 
 document.getElementById('expand-btn').addEventListener('click', () => {
-  document.querySelectorAll('.tab-list').forEach(el => el.classList.add('open'));
+  document.querySelectorAll('.tab-list').forEach(el => {
+    el.dispatchEvent(new Event('ensure-rendered'));
+    el.classList.add('open');
+  });
   document.querySelectorAll('.chevron').forEach(c => c.classList.add('open'));
 });
 
@@ -415,6 +457,7 @@ document.getElementById('search').addEventListener('keydown', e => {
     if (el.classList.contains('domain-row')) {
       const list = el.nextElementSibling;
       if (list && !list.classList.contains('open')) {
+        list.dispatchEvent(new Event('ensure-rendered'));
         list.classList.add('open');
         el.querySelector('.chevron')?.classList.add('open');
       }
@@ -465,7 +508,7 @@ document.getElementById('search').addEventListener('input', e => {
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 async function loadSettings() {
-  const settings = await send('getSettings');
+  const settings = await send('getSettings') || {};
   document.getElementById('auto-stack-toggle').checked = settings?.autoStack ?? true;
   document.getElementById('max-stack-input').value = settings?.maxStack ?? 500;
 }
@@ -481,4 +524,12 @@ document.getElementById('max-stack-input').addEventListener('change', async e =>
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-Promise.all([init(), loadSettings()]).then(() => document.getElementById('search').focus());
+renderAll('');
+updateStat();
+document.getElementById('search').focus();
+perf('frame ready');
+
+requestAnimationFrame(() => {
+  init();
+  loadSettings();
+});
