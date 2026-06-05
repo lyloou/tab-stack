@@ -5,6 +5,8 @@ Chrome 标签页「压栈」扩展 — 用快捷键把标签页按域名合并�
 ![manifest version](https://img.shields.io/badge/manifest-v3-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
+![Tab Stack 弹窗界面](assets/sample.png)
+
 ## 功能
 
 - **按域名压栈** — 多个同域名 tab 时保留当前活动页，其余压栈；只剩一个时再按也压栈并关闭
@@ -14,6 +16,7 @@ Chrome 标签页「压栈」扩展 — 用快捷键把标签页按域名合并�
 - **一键恢复整组** — 从 Saved Stacks 区域点击 ↩ 恢复该域名下所有标签
 - **Undo 恢复** — 恢复后 3.5 秒内可撤销
 - **搜索过滤** — 弹窗打开即聚焦搜索框，实时过滤域名和标签标题；命中子条目时自动展开
+- **快速首屏** — 弹窗先显示框架和搜索框，再异步加载标签数据；折叠的标签列表按需渲染
 - **键盘导航** — 搜索框内用 ↑↓ 移动、→← 展开/折叠、Enter 激活、Esc 清空或关闭
 - **组管理** — 对已保存的栈重命名、删除整组、删除单条
 - **空组自动清理** — 没有内容的域名组不显示
@@ -52,6 +55,19 @@ Chrome 标签页「压栈」扩展 — 用快捷键把标签页按域名合并�
 4. 点击「加载已解压的扩展程序」，选择本仓库目录
 5. 扩展图标出现在工具栏，即可使用
 
+## 开发与调试
+
+本项目没有构建步骤，修改文件后在 `chrome://extensions` 里点击扩展的刷新按钮即可重新加载。
+
+弹窗启动阶段会在 popup DevTools 控制台输出耗时日志：
+
+- `frame ready` — 弹窗框架和搜索框已可用
+- `stacks loaded` — 已保存栈读取完成
+- `domains loaded` — 当前打开标签分组读取完成
+- `rendered` — 弹窗内容渲染完成
+
+如需查看这些日志：右键扩展弹窗，选择「检查」，再重新打开弹窗复现。
+
 ## 文件结构
 
 ```
@@ -60,6 +76,7 @@ tab-stack/
 ├── background.js      # Service Worker：压栈/恢复逻辑、快捷键、自动入栈监听
 ├── popup.html         # 弹窗 UI（亮色主题，JetBrains Mono + DM Sans）
 ├── popup.js           # 弹窗交互：搜索、键盘导航、组管理、设置
+├── assets/            # README 说明图
 ├── icons/             # 扩展图标（SVG 源文件 + 16/32/48/128px PNG）
 └── README.md
 ```
