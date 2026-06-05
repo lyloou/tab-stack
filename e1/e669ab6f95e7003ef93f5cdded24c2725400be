@@ -1,0 +1,24 @@
+popup.js
+  s_6f91a4c65a4d97::t_651a5909c22c43 8-12,16-17,19-21,25-27,29
+  s_6f91a4c65a4d97::t_b0a5384dc0df1c 172-174,262-264,274,309,369,379-381,391-393
+  s_6f91a4c65a4d97::t_02a4e870e3e219 402-405,460,511,527-535
+  s_6f91a4c65a4d97::t_c961262ab1b443 127,134-152,154-158,162,199,206-242,244-248,252
+popup.html
+  s_6f91a4c65a4d97::t_531b51fc8d2275 6-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "e1e669ab6f95e7003ef93f5cdded24c2725400be",
+  "prompts": {},
+  "sessions": {
+    "s_6f91a4c65a4d97": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e95f2-b038-7f03-a8d3-6e528f66c330",
+        "model": "gpt-5.5"
+      },
+      "human_author": "lilou <lyloou@qq.com>"
+    }
+  }
+}
